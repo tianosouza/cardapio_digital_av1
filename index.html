@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cardápio Digital</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #ffffff;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 16px;
+      transition: background-color 0.5s, background-image 0.5s;
+    }
+
+    h1,
+    h2 {
+      color: #333;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .category {
+      margin: 20px;
+    }
+
+    .item {
+      margin-bottom: 10px;
+    }
+
+    .item label {
+      display: block;
+    }
+
+    .cart {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 20px;
+      background-color: #fff;
+    }
+
+    .total {
+      font-weight: bold;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cart-item button {
+      margin-left: 5px;
+    }
+
+    .order-summary,
+    .order-form {
+      margin: 20px;
+    }
+
+    .order-form input,
+    .order-form select {
+      display: block;
+      margin: 10px 0;
+      padding: 8px;
+      width: calc(100% - 16px);
+      /* Full width minus padding */
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 600px) {
+
+      .order-form input,
+      .order-form select {
+        width: calc(50% - 16px);
+        /* Half width minus padding */
+      }
+    }
+
+    @media (max-width: 599px) {
+
+      .cart,
+      .order-summary,
+      .order-form {
+        margin: 10px;
+        padding: 10px;
+      }
+
+      .cart-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .cart-item button {
+        margin-top: 5px;
+      }
+    }
+
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 0.5s forwards;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    #pix-details,
+    #paypal-details,
+    #credit-card-details,
+    #bank-transfer-details {
+      display: none;
+      margin-top: 10px;
+    }
+
+    #pix-key-label,
+    #paypal-email-label,
+    #credit-card-number-label,
+    #bank-account-label {
+      display: none;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.rawgit.com/jeromeetienne/jquery-qrcode/master/jquery.qrcode.min.js"></script>
+</head>
+
+<body>
+  <h1>Cardápio Digital - Fast Food</h1>
+
+  <!-- Seletor de Categoria -->
+  <div>
+    <label for="category-select">Escolha uma categoria:</label>
+    <select id="category-select" onchange="filterCategory()">
+      <option value="all">Todas</option>
+      <option value="hamburgers">Hambúrgueres</option>
+      <option value="savory">Salgados</option>
+      <option value="beverages">Bebidas</option>
+    </select>
+  </div>
+
+  <!-- Apresentação do cardápio -->
+  <div id="hamburgers" class="category">
+    <h2>Hambúrgueres</h2>
+    <div class="item">
+      <label>
+        <input type="checkbox" name="items" value="Hambúrguer Clássico" data-price="15.00">
+        Hambúrguer Clássico - Suculento hambúrguer de carne com alface, tomate e queijo. - R$15,00
+      </label>
+    </div>
+    <div class="item">
+      <label>
+        <input type="checkbox" name="items" value="Cheeseburger" data-price="18.00">
+        Cheeseburger - Hambúrguer de carne com queijo cheddar derretido. - R$18,00
+      </label>
+    </div>
+  </div>
+
+  <div id="savory" class="category">
+    <h2>Salgados</h2>
+    <div class="item">
+      <label>
+        <input type="checkbox" name="items" value="Coxinha" data-price="5.00">
+        Coxinha - Tradicional coxinha de frango com catupiry. - R$5,00
+      </label>
+    </div>
+    <div class="item">
+      <label>
+        <input type="checkbox" name="items" value="Kibe" data-price="4.00">
+        Kibe - Kibe frito recheado com carne. - R$4,00
+      </label>
+    </div>
+  </div>
+
+  <div id="beverages" class="category">
+    <h2>Bebidas</h2>
+    <div class="item">
+      <label>
+        <input type="checkbox" name="items" value="Refrigerante" data-price="3.00">
+        Refrigerante - Escolha entre Cola, Guaraná, Laranja. - R$3,00
+      </label>
+    </div>
+    <div class="item">
+      <label>
+        <input type="checkbox" name="items" value="Suco" data-price="5.00">
+        Suco - Sucos naturais de laranja ou limão. - R$5,00
+      </label>
+    </div>
+  </div>
+
+  <!-- Gerenciamento do pedido -->
+  <div class="cart">
+    <h2>Carrinho de Compras</h2>
+    <ul id="cart-items">
+      <!-- Itens do carrinho -->
+    </ul>
+    <p class="total">Total: R$<span id="total-amount">0.00</span></p>
+    <button onclick="toggleOrderForm()">Finalizar Pedido</button>
+  </div>
+
+  <!-- Finalização do pedido -->
+  <div id="order-form" class="order-form" style="display:none;">
+    <h2>Finalização do Pedido</h2>
+    <label for="customer-name">Nome Completo:</label>
+    <input type="text" id="customer-name" placeholder="Seu nome completo" required>
+
+    <label for="customer-address">Endereço:</label>
+    <input type="text" id="customer-address" placeholder="Seu endereço completo" required>
+
+    <label for="payment-method">Método de Pagamento:</label>
+    <select id="payment-method" onchange="handlePaymentMethodChange()" required>
+      <option value="" disabled selected>Escolha um método</option>
+      <option value="credit_card">Cartão de Crédito</option>
+      <option value="paypal">PayPal</option>
+      <option value="pix">Pix</option>
+      <option value="bank_transfer">Transferência Bancária</option>
+    </select>
+
+    <div id="pix-details">
+      <label for="pix-key-type">Tipo de Chave Pix:</label>
+      <select id="pix-key-type" onchange="handlePixKeyTypeChange()">
+        <option value="random">Chave Aleatória</option>
+        <option value="email">Email</option>
+        <option value="phone">Telefone</option>
+        <option value="cpf">CPF</option>
+      </select>
+
+      <label for="pix-key" id="pix-key-label">Chave Pix:</label>
+      <input type="text" id="pix-key" placeholder="Digite sua chave Pix">
+      <button onclick="generatePixQRCode()">Gerar QR Code</button>
+      <div id="pix-qrcode"></div>
+    </div>
+
+    <div id="paypal-details">
+      <label for="paypal-email" id="paypal-email-label">Email do PayPal:</label>
+      <input type="email" id="paypal-email" placeholder="Digite seu email do PayPal">
+    </div>
+
+    <div id="credit-card-details">
+      <label for="credit-card-number" id="credit-card-number-label">Número do Cartão:</label>
+      <input type="text" id="credit-card-number" placeholder="Digite o número do cartão">
+
+      <label for="credit-card-expiry">Data de Expiração:</label>
+      <input type="text" id="credit-card-expiry" placeholder="MM/AA">
+
+      <label for="credit-card-cvc">Código de Segurança:</label>
+      <input type="text" id="credit-card-cvc" placeholder="CVC">
+    </div>
+
+    <div id="bank-transfer-details">
+      <input type="number" id="bank-account" placeholder="Digite o número da conta">
+      <input type="text" id="cpf" placeholder="Digite o CPF">
+    </div>
+
+    <button onclick="finalizeOrder()">Confirmar Pedido</button>
+    <button onclick="toggleOrderForm()">Cancelar</button>
+  </div>
+
+  <div id="order-summary" class="order-summary" style="display:none;">
+    <h2>Resumo do Pedido</h2>
+    <p><strong>Nome:</strong> <span id="summary-customer-name"></span></p>
+    <p><strong>Endereço:</strong> <span id="summary-customer-address"></span></p>
+    <p><strong>Método de Pagamento:</strong> <span id="summary-payment-method"></span></p>
+    <ul id="final-order-items">
+      <!-- Itens do pedido final -->
+    </ul>
+    <p><strong>Total:</strong> R$<span id="final-total-amount"></span></p>
+    <button onclick="confirmOrder()">Confirmar Pedido</button>
+    <button onclick="cancelOrder()">Cancelar Pedido</button>
+  </div>
+
+  <script>
+    let cart = [];
+
+    function updateCart() {
+      const cartItems = document.getElementById('cart-items');
+      const totalAmount = document.getElementById('total-amount');
+      cartItems.innerHTML = '';
+      let total = 0;
+      cart.forEach(item => {
+        const li = document.createElement('li');
+        li.classList.add('cart-item');
+        li.innerHTML = `${item.name} - R$${item.price} x ${item.quantity}
+                    <button onclick="changeQuantity('${item.name}', 1)">+</button>
+                    <button onclick="changeQuantity('${item.name}', -1)">-</button>`;
+        cartItems.appendChild(li);
+        total += item.price * item.quantity;
+      });
+      totalAmount.textContent = total.toFixed(2);
+    }
+
+    function changeQuantity(itemName, change) {
+      const item = cart.find(item => item.name === itemName);
+      if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+          cart = cart.filter(item => item.name !== itemName);
+        }
+        updateCart();
+      }
+    }
+
+    function toggleOrderForm() {
+      const orderForm = document.getElementById('order-form');
+      orderForm.style.display = orderForm.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function handlePaymentMethodChange() {
+      const paymentMethod = document.getElementById('payment-method').value;
+      const pixDetails = document.getElementById('pix-details');
+      const paypalDetails = document.getElementById('paypal-details');
+      const creditCardDetails = document.getElementById('credit-card-details');
+      const bankTransferDetails = document.getElementById('bank-transfer-details');
+
+      pixDetails.style.display = paymentMethod === 'pix' ? 'block' : 'none';
+      paypalDetails.style.display = paymentMethod === 'paypal' ? 'block' : 'none';
+      creditCardDetails.style.display = paymentMethod === 'credit_card' ? 'block' : 'none';
+      bankTransferDetails.style.display = paymentMethod === 'bank_transfer' ? 'block' : 'none';
+    }
+
+    function handlePixKeyTypeChange() {
+      const keyLabel = document.getElementById('pix-key-label');
+      const keyInput = document.getElementById('pix-key');
+      keyLabel.style.display = 'block';
+      keyInput.style.display = 'block';
+    }
+
+    function generatePixQRCode() {
+      const pixKey = document.getElementById('pix-key').value;
+      if (pixKey) {
+        $('#pix-qrcode').empty();
+        $('#pix-qrcode').qrcode({ text: pixKey });
+      } else {
+        alert('Por favor, forneça sua chave Pix.');
+      }
+    }
+
+    function finalizeOrder() {
+      const customerName = document.getElementById('customer-name').value;
+      const customerAddress = document.getElementById('customer-address').value;
+      const paymentMethod = document.getElementById('payment-method').value;
+
+      if (customerName && customerAddress && paymentMethod) {
+        document.getElementById('summary-customer-name').textContent = customerName;
+        document.getElementById('summary-customer-address').textContent = customerAddress;
+        document.getElementById('summary-payment-method').textContent = paymentMethod;
+
+        const finalOrderItems = document.getElementById('final-order-items');
+        finalOrderItems.innerHTML = '';
+        let total = 0;
+        cart.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `${item.name} - R$${item.price} x ${item.quantity}`;
+          finalOrderItems.appendChild(li);
+          total += item.price * item.quantity;
+        });
+        document.getElementById('final-total-amount').textContent = total.toFixed(2);
+
+        if (paymentMethod === 'pix') {
+          const pixKey = document.getElementById('pix-key').value;
+          if (pixKey) {
+            generatePixQRCode();
+          } else {
+            alert('Por favor, forneça sua chave Pix.');
+            return;
+          }
+        }
+
+        document.getElementById('order-summary').style.display = 'block';
+      } else {
+        alert('Por favor, preencha todos os campos do formulário.');
+      }
+    }
+
+    function confirmOrder() {
+      alert("Pedido confirmado! Obrigado por comprar conosco.");
+      cart = [];
+      updateCart();
+      document.getElementById('order-summary').style.display = 'none';
+    }
+
+    function cancelOrder() {
+      alert("Pedido cancelado.");
+      document.getElementById('order-summary').style.display = 'none';
+    }
+
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', function () {
+        const name = this.value;
+        const price = parseFloat(this.getAttribute('data-price'));
+        if (this.checked) {
+          cart.push({ name, price, quantity: 1 });
+        } else {
+          cart = cart.filter(item => item.name !== name);
+        }
+        updateCart();
+      });
+    });
+
+    function filterCategory() {
+      const selectedCategory = document.getElementById('category-select').value;
+      const body = document.body;
+      document.querySelectorAll('.category').forEach(category => {
+        if (selectedCategory === 'all' || category.id === selectedCategory) {
+          category.style.display = 'block';
+          category.classList.add('fade-in');
+        } else {
+          category.style.display = 'none';
+        }
+      });
+
+      switch (selectedCategory) {
+        case 'hamburgers':
+          body.style.backgroundColor = '#ffe5e5';
+          break;
+        case 'savory':
+          body.style.backgroundColor = '#e5f4e3';
+          break;
+        case 'beverages':
+          body.style.backgroundColor = '#e5e5ff';
+          break;
+        default:
+          body.style.backgroundImage = "none";
+          body.style.backgroundColor = '#ffffff';
+          break;
+      }
+    }
+
+    filterCategory();
+  </script>
+</body>
+
+</html>
